@@ -20,6 +20,10 @@ const FloodZoneSchema = new mongoose.Schema({
         enum: ['Low', 'Medium', 'High'], // Restrict values to these options
         required: true,
     },
+    resolved: {
+        type: Boolean, // Checkbox field
+        default: false, // Defaults to unresolved (false)
+    },
     createdAt: {
         type: Date,
         default: Date.now, // Automatically set the date of creation

@@ -4,7 +4,7 @@ const FloodZone = require('../models/FloodZone'); // Import the FloodZone model
 
 // Create a new flood zone
 router.post('/', async (req, res) => {
-    const { name, location, riskLevel } = req.body;
+    const { name, location, riskLevel, resolved } = req.body;
 
     // Validate location coordinates
     if (!location || !location.coordinates || location.coordinates.length !== 2) {
@@ -17,6 +17,7 @@ router.post('/', async (req, res) => {
             name,
             location,
             riskLevel,
+            resolved: resolved || false, // Default to false if not provided
         });
 
         // Save it to the database
@@ -30,7 +31,69 @@ router.post('/', async (req, res) => {
     }
 });
 
+// Get all flood zones
+router.get('/', async (req, res) => {
+    try {
+        const floodZones = await FloodZone.find(); // Fetch all flood zones
+        res.status(200).json(floodZones);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get a specific flood zone by ID
+router.get('/:id', async (req, res) => {
+    try {
+        const floodZone = await FloodZone.findById(req.params.id);
+        if (!floodZone) {
+            return res.status(404).json({ error: 'Flood zone not found' });
+        }
+        res.status(200).json(floodZone);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Update a flood zone by ID
+router.put('/:id', async (req, res) => {
+    const { name, location, riskLevel, resolved } = req.body;
+
+    try {
+        // Find and update the flood zone
+        const floodZone = await FloodZone.findByIdAndUpdate(
+            req.params.id,
+            {
+                name,
+                location,
+                riskLevel,
+                resolved,
+            },
+            { new: true } // Return the updated document
+        );
+
+        if (!floodZone) {
+            return res.status(404).json({ error: 'Flood zone not found' });
+        }
+
+        res.status(200).json({ message: 'Flood zone updated', floodZone });
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// Delete a flood zone by ID
+router.delete('/:id', async (req, res) => {
+    try {
+        const floodZone = await FloodZone.findByIdAndDelete(req.params.id);
+
+        if (!floodZone) {
+            return res.status(404).json({ error: 'Flood zone not found' });
+        }
+
+        res.status(200).json({ message: 'Flood zone deleted' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router; // Export the router
-
-
-
