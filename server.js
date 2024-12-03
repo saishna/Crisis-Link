@@ -5,6 +5,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const floodRoutes = require('./routes/flood'); // Import flood routes
 const helplineRouter = require('./routes/helplineRouter'); // Import helpline router
+const emergencyRoutes = require('./routes/emergencyRoutes');
 
 
 dotenv.config(); // Load environment variables
@@ -23,6 +24,7 @@ app.use((req, res, next) => {
 // Routes
 app.use('/api/flood-zones', floodRoutes); // Use flood routes
 app.use('/api/helplines', helplineRouter);  // Register helpline routes
+app.use('/api/emergencies', emergencyRoutes);
 
 
 
