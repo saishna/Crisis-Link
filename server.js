@@ -6,6 +6,8 @@ const dotenv = require('dotenv');
 const floodRoutes = require('./routes/flood'); // Import flood routes
 const helplineRouter = require('./routes/helplineRouter'); // Import helpline router
 const emergencyRoutes = require('./routes/emergencyRoutes');
+const helpline = require('./routes/helpline');
+
 
 
 dotenv.config(); // Load environment variables
@@ -25,27 +27,31 @@ app.use((req, res, next) => {
 app.use('/api/flood-zones', floodRoutes); // Use flood routes
 app.use('/api/helplines', helplineRouter);  // Register helpline routes
 app.use('/api/emergencies', emergencyRoutes);
+app.use('/api', helpline)
 
 
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI)
+
+
+mongoose.connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+})
     .then(() => console.log('Connected to MongoDB'))
-    .catch((err) => console.error('Failed to connect to MongoDB', err));
+    .catch((err) => console.error('Failed to connect to MongoDB:', err));
 
-// Handle unmatched routes
 // Handle unmatched routes (Debugging addition)
 app.use((req, res, next) => {
     console.log(`Unmatched route: ${req.method} ${req.url}`);
     res.status(404).json({ error: 'Route not found' });
 });
-// Check active routes
+
+// Check active routes (Useful for debugging)
 app._router.stack.forEach((middleware) => {
     if (middleware.route) { // Route handlers have a route property
-        console.log(`Route: ${middleware.route.path} - Methods: ${Object.keys(middleware.route.methods)}`);
+        console.log(`Route: ${middleware.route.path} - Methods: ${Object.keys(middleware.route.methods).join(', ')}`);
     }
 });
-
 
 // Start the server
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
