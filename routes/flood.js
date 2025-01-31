@@ -31,15 +31,25 @@ router.post('/', async (req, res) => {
     }
 });
 
-// Get all flood zones
 router.get('/', async (req, res) => {
     try {
-        const floodZones = await FloodZone.find(); // Fetch all flood zones
-        res.status(200).json(floodZones);
+        const floodZones = await FloodZone.find({ resolved: false }); // Fetch only active flood zones
+        res.json(floodZones);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Error fetching flood zones' });
     }
 });
+
+
+// // Get all flood zones
+// router.get('/', async (req, res) => {
+//     try {
+//         const floodZones = await FloodZone.find(); // Fetch all flood zones
+//         res.status(200).json(floodZones);
+//     } catch (err) {
+//         res.status(500).json({ error: err.message });
+//     }
+// });
 
 // Get a specific flood zone by ID
 router.get('/:id', async (req, res) => {
