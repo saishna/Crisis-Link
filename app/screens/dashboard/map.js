@@ -1,122 +1,96 @@
-import { useState, useEffect } from "react";
-import { Text, View, StatusBar, Alert } from "react-native";
-import MapView, { Marker } from "react-native-maps";
-import * as Location from "expo-location";
-import * as Notifications from "expo-notifications";
-import tw from "twrnc";
+import { useState, useEffect } from 'react';
+import { Text, View, StatusBar } from "react-native";
+import MapView, { Marker } from 'react-native-maps';
+import * as Location from 'expo-location';
+import * as Notifications from 'expo-notifications';
+import tw from 'twrnc';
 
-// API endpoint to fetch flood zones
-const FLOOD_ZONE_API = "http://192.168.1.5:5000/api/flood-zones"; // Change to your API
-
-// Configure notifications handler
-Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: true,
-    }),
-});
+// API URL to fetch flood zones data
+const API_URL = "http://192.168.1.6:5000/api/flood-zones"; // Replace with your API endpoint
 
 const MapScreen = () => {
     const [location, setLocation] = useState(null);
-    const [floodZones, setFloodZones] = useState([]);
     const [errorMsg, setErrorMsg] = useState(null);
+    const [floodZones, setFloodZones] = useState([]);  // State for flood zones
+    const [notificationInterval, setNotificationInterval] = useState(null); // Interval state for continuous notifications
 
+    // Request permissions and track location
     useEffect(() => {
-        const setupApp = async () => {
-            await requestNotificationPermission();
-            await getLocationPermission();
-            await fetchFloodZones();
+        const checkPermissions = async () => {
+            const { status } = await Notifications.getPermissionsAsync();
+            if (status !== 'granted') {
+                console.log('Notification permission not granted');
+                await Notifications.requestPermissionsAsync();
+            } else {
+                console.log('Notification permission granted');
+            }
         };
 
-        setupApp();
-    }, []);
+        checkPermissions();  // Check notification permissions
 
-    // 🚀 Request Push Notification Permissions
-    const requestNotificationPermission = async () => {
-        const { status } = await Notifications.requestPermissionsAsync();
-        if (status !== "granted") {
-            Alert.alert("Notifications Disabled", "Enable notifications in settings.");
-            console.log("❌ Notifications permission denied.");
-            return;
-        }
-        console.log("✅ Notifications permission granted.");
-    };
-
-    // 🌍 Request Location Permission & Track User
-    const getLocationPermission = async () => {
-        let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== "granted") {
-            setErrorMsg("Permission to access location was denied");
-            return;
-        }
-
-        const currentLocation = await Location.getCurrentPositionAsync({});
-        setLocation(currentLocation.coords);
-
-        // Track user movement
-        Location.watchPositionAsync(
-            {
-                accuracy: Location.Accuracy.High,
-                timeInterval: 5000, // Every 5 seconds
-                distanceInterval: 10, // Every 10 meters
-            },
-            (newLocation) => {
-                setLocation(newLocation.coords);
-                checkFloodZone(newLocation.coords);
+        const getLocationPermission = async () => {
+            let { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                setErrorMsg('Permission to access location was denied');
+                return;
             }
-        );
-    };
 
-    // 🌊 Fetch Flood Zones from API
-    const fetchFloodZones = async () => {
-        try {
-            const res = await fetch(FLOOD_ZONE_API);
-            const data = await res.json();
-            console.log("✅ Flood zones fetched:", data);
-            setFloodZones(data?.flood || []);
-        } catch (error) {
-            console.error("❌ Error fetching flood zones:", error);
-            setFloodZones([]);
-        }
-    };
-    const sendTestNotification = async () => {
-        console.log("🚀 Sending test notification...");
+            const currentLocation = await Location.getCurrentPositionAsync({});
+            setLocation(currentLocation.coords);
 
-        await Notifications.scheduleNotificationAsync({
-            content: {
-                title: "🚀 Test Notification",
-                body: "This is a test alert!",
-                sound: "default",
-            },
-            trigger: null, // Send instantly
+            Location.watchPositionAsync(
+                {
+                    accuracy: Location.Accuracy.High,
+                    timeInterval: 10000, // Check every 10 seconds
+                    distanceInterval: 10, // Check every 10 meters
+                },
+                (newLocation) => {
+                    setLocation(newLocation.coords);
+                    checkFloodZone(newLocation.coords); // Check if user is in flood zone
+                }
+            );
+        };
+
+        getLocationPermission();  // Request location permission and get user's location
+
+        // Show notifications even when app is open
+        const subscription = Notifications.addNotificationReceivedListener(notification => {
+            console.log('Notification received in foreground:', notification);
+            Notifications.presentNotificationAsync(notification.request.content);  // Force display
         });
 
-        console.log("✅ Test notification should be sent.");
-    };
-
-    useEffect(() => {
-        sendTestNotification();
+        return () => subscription.remove();
     }, []);
 
+    // Fetch flood zones data from the API
+    const fetchFloodZones = async () => {
+        try {
+            const response = await fetch(API_URL);
+            const data = await response.json();
+            setFloodZones(data);  // Set the fetched flood zones data to state
+        } catch (error) {
+            console.error('Error fetching flood zones:', error);
+            setErrorMsg('Failed to load flood zones.');
+        }
+    };
 
-
-    // 📢 Send Push Notification
+    // Send local notification
     const sendLocalNotification = async () => {
-        console.log("🚨 Sending flood alert notification...");
+        console.log("Sending local notification...");
+
         await Notifications.scheduleNotificationAsync({
             content: {
-                title: "🚨 Flood Alert!",
+                title: "🚨 Flood Alert! 🚨",
                 body: "⚠️ You are in a flood-prone area. Stay alert!",
                 sound: "default",
-                vibrate: [500, 500],
+                vibrate: [500, 500], // Vibration pattern
+                priority: Notifications.AndroidNotificationPriority.MAX,
             },
             trigger: null, // Send immediately
         });
-        console.log("✅ Notification sent.");
     };
 
-    // 📏 Calculate Distance Between Two Coordinates
+    // Calculate distance between two coordinates
     const getDistance = (lat1, lon1, lat2, lon2) => {
         const toRad = (value) => (value * Math.PI) / 180;
         const R = 6371e3; // Earth's radius in meters
@@ -129,32 +103,38 @@ const MapScreen = () => {
         return R * c;
     };
 
-    // 🚧 Check if user is inside a flood zone
+    // Check if user is in a flood zone
     const checkFloodZone = (userCoords) => {
-        if (!floodZones.length) {
-            console.log("❌ No flood zones available.");
-            return;
-        }
+        console.log("Checking if user is in flood zone...");
 
-        let isInFloodZone = false;
+        if (!floodZones.length) return;
 
-        floodZones.forEach((zone) => {
-            const [zoneLat, zoneLng] = zone.location.coordinates;
+        const isInFloodZone = floodZones.some((zone) => {
+            const coordinates = zone.location.coordinates;
+            const [zoneLat, zoneLng] = coordinates;
             const distance = getDistance(userCoords.latitude, userCoords.longitude, zoneLat, zoneLng);
-
-            console.log(`🌍 Checking flood zone: ${zone.name} → Distance: ${distance}m`);
-
-            if (distance < 100) {
-                console.log("🚨 USER IS IN A FLOOD ZONE! SENDING NOTIFICATION...");
-                isInFloodZone = true;
-                sendLocalNotification();
-            }
+            console.log(`Distance to ${zone.name}: ${distance} meters`);
+            return distance < 1000; // Alert if within 1000 meters (1 km)
         });
 
-        if (!isInFloodZone) {
-            console.log("✅ User is outside flood zones.");
+        if (isInFloodZone && !notificationInterval) {
+            console.log("User is in a flood zone! Triggering continuous notifications.");
+            // Start sending notifications every 1 second
+            const interval = setInterval(() => {
+                sendLocalNotification();
+            }, 10000); // 1 second interval
+            setNotificationInterval(interval); // Store the interval ID
+        } else if (!isInFloodZone && notificationInterval) {
+            console.log("User is no longer in a flood zone. Stopping notifications.");
+            clearInterval(notificationInterval); // Stop sending notifications
+            setNotificationInterval(null); // Clear interval ID
         }
     };
+
+    // Fetch flood zones when the component is mounted
+    useEffect(() => {
+        fetchFloodZones();  // Fetch flood zones from API
+    }, []);
 
     if (errorMsg) {
         return <Text>{errorMsg}</Text>;
@@ -178,10 +158,9 @@ const MapScreen = () => {
                 showsUserLocation={true}
                 followsUserLocation={true}
             >
-                {/* Render Flood Zones from API */}
-                {floodZones?.map((zone, index) => {
+                {floodZones.map((zone, index) => {
                     const [zoneLat, zoneLng] = zone.location.coordinates;
-                    const pinColor = zone.riskLevel === "High" ? "red" : "orange";
+                    const pinColor = zone.riskLevel === "High" ? "red" : "orange"; // Customize based on risk level
 
                     return (
                         <Marker
@@ -194,10 +173,13 @@ const MapScreen = () => {
                     );
                 })}
 
-                {/* User's Location Marker */}
+                {/* Marker for the user's current location */}
                 {location && (
                     <Marker
-                        coordinate={{ latitude: location.latitude, longitude: location.longitude }}
+                        coordinate={{
+                            latitude: location.latitude,
+                            longitude: location.longitude,
+                        }}
                         title="Your Location"
                         description={`Lat: ${location.latitude}, Lng: ${location.longitude}`}
                         pinColor="blue"
