@@ -7,8 +7,8 @@ const floodRoutes = require('./routes/flood'); // Import flood routes
 const helplineRouter = require('./routes/helplineRouter'); // Import helpline router
 const emergencyRoutes = require('./routes/emergencyRoutes');
 const helpline = require('./routes/helpline');
-
-
+const rescueRoutes = require('./routes/rescue'); // Import rescue routes
+const test = require('./routes/res');
 
 dotenv.config(); // Load environment variables
 
@@ -18,6 +18,8 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors()); // Allow cross-origin requests
 app.use(bodyParser.json()); // Parse JSON request bodies
+
+// Log incoming requests (for debugging)
 app.use((req, res, next) => {
     console.log(`${req.method} ${req.url} - Body:`, req.body); // Log incoming requests
     next();
@@ -25,14 +27,13 @@ app.use((req, res, next) => {
 
 // Routes
 app.use('/api/flood-zones', floodRoutes); // Use flood routes
-app.use('/api/helplines', helplineRouter);  // Register helpline routes
-app.use('/api/emergencies', emergencyRoutes);
-app.use('/api', helpline)
+app.use('/api/helplines', helplineRouter); // Register helpline routes
+app.use('/api/emergencies', emergencyRoutes); // Register emergency routes
+app.use('/api', helpline); // Register other helplines
+app.use('/api/rescues', rescueRoutes); // Register rescue routes
+app.use('/api/test', test);
 
-
-
-
-
+// MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true
@@ -51,6 +52,12 @@ app._router.stack.forEach((middleware) => {
     if (middleware.route) { // Route handlers have a route property
         console.log(`Route: ${middleware.route.path} - Methods: ${Object.keys(middleware.route.methods).join(', ')}`);
     }
+});
+
+// Global Error Handler (logs full stack)
+app.use((err, req, res, next) => {
+    console.error('🔥 Global Error:', err.stack); // full stack trace
+    res.status(500).json({ error: err.message });
 });
 
 // Start the server
