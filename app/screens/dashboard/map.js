@@ -6,7 +6,7 @@ import * as Notifications from 'expo-notifications';
 import tw from 'twrnc';
 
 // API URL to fetch flood zones data
-const API_URL = "http://192.168.1.5:5000/api/flood-zones"; // Replace with your API endpoint
+const API_URL = "http://192.168.1.6:5000/api/flood-zones"; // Replace with your API endpoint
 
 const MapScreen = () => {
     const [location, setLocation] = useState(null);

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View, Text, Image, Button, TouchableOpacity, StatusBar } from 'react-native';
 import tw from 'twrnc';
 import Animated, { FlipInEasyX, FlipOutEasyX, BounceIn, BounceOut, FadeIn, FadeInLeft, FadeInRight, FadeInUp, FadeOut } from 'react-native-reanimated';
-import background from 'C:/Users/sayu0/Downloads/Crisis-Link-mobile-app-sayu/Crisis-Link-mobile-app-sayu/assets/background.png';
+import background from 'E:/final techlead/New folder/Crisis-Link/assets/background.png';
 
 import { useRouter } from 'expo-router';
 
@@ -28,7 +28,7 @@ export default function WelcomeScreen() {
                     source={background} />
                 <Animated.Image entering={FlipInEasyX.delay(200).duration(200)}
                     style={tw`h-65 w-3/4 absolute ml-9 `}
-                    source={require("C:/Users/sayu0/Downloads/Crisis-Link-mobile-app-sayu/Crisis-Link-mobile-app-sayu/assets/crisislink.png")} />
+                    source={require("E:/final techlead/New folder/Crisis-Link/assets/crisislink.png")} />
                 <Animated.Text entering={BounceIn.delay(300).duration(100).springify().damping(5)}
                     style={tw`ml-15 pt-85 text-white text-5xl font-bold `}>WELCOME!</Animated.Text>
 
