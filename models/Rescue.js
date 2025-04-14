@@ -3,36 +3,43 @@ const mongoose = require('mongoose');
 const rescueSchema = new mongoose.Schema({
     name: {
         type: String,
-        required: true
+        required: [true, 'Name is required']
     },
     risk: {
         type: String,
-        enum: ['High', 'Low'], // Only 'High' or 'Low' are valid
-        required: true
+        enum: ['High', 'Low'],
+        required: [true, 'Risk level is required']
     },
     status: {
         type: String,
-        enum: ['Active', 'Closed'], // Only 'Active' or 'Closed' are valid
-        required: true
+        enum: ['Active', 'Closed'],
+        required: [true, 'Status is required']
     },
     location: {
         address: {
             type: String,
-            required: true
+            required: [true, 'Address is required']
         },
         coordinates: {
-            type: [Number],
-            required: true
+            lat: {
+                type: Number,
+                required: [true, 'Latitude is required']
+            },
+            lng: {
+                type: Number,
+                required: [true, 'Longitude is required']
+            }
         }
     },
     action: {
         type: String,
-        enum: ['Resolved', 'Unresolved'], // Only 'Resolved' or 'Unresolved' are valid
-        required: true
+        enum: ['Resolved', 'Unresolved'],
+        required: [true, 'Action status is required']
     }
+}, {
+    timestamps: true
 });
 
-// Create the model from the schema
 const Rescue = mongoose.model('Rescue', rescueSchema);
 
 module.exports = Rescue;

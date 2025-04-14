@@ -29,7 +29,6 @@ app.use((req, res, next) => {
 app.use('/api/flood-zones', floodRoutes); // Use flood routes
 app.use('/api/helplines', helplineRouter); // Register helpline routes
 app.use('/api/emergencies', emergencyRoutes); // Register emergency routes
-app.use('/api', helpline); // Register other helplines
 app.use('/api/rescues', rescueRoutes); // Register rescue routes
 app.use('/api/test', test);
 

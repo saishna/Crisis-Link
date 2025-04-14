@@ -123,14 +123,15 @@ The Disaster Alert System is a comprehensive mobile and web application develope
 - **Request Body**:
   ```json
   {
-      "name": "Teku Area",
-      "location": {
-          "coordinates": [27.6939, 85.3214],
-          "address": "Teku, Kathmandu"
-      },
-      "riskLevel": "High",
-      "resolved": false
-  }
+  "name": "Teku Area",
+  "location": {
+    "coordinates": [27.6939, 85.3214],
+    "address": "Teku, Kathmandu"
+  },
+  "riskLevel": "High",
+  "description": "Flood risk due to heavy rains in the monsoon season.",
+  "resolved": false
+ }
   ```
 
 #### **Get All Flood Zones**
@@ -164,3 +165,72 @@ The Disaster Alert System is a comprehensive mobile and web application develope
 - **Method**: DELETE
 - Replace `:id` with the Flood Zone ID.
 
+## Postman Testing for `rescue.js`
+
+### **Rescue Request CRUD Operations**
+
+#### **Create Rescue Request**
+- **Method:** `POST`
+- **Endpoint:** `/api/rescues`
+- **Description:** Create a new rescue request.
+
+##### Request Body (JSON)
+```json
+{
+  "name": "John Doe",
+  "risk": "High",
+  "status": "Active",
+  "location": {
+    "address": "123 River Street",
+    "coordinates": {
+      "lat": 27.700769,
+      "lng": 85.300140
+    }
+  },
+  "action": "Unresolved"
+}
+
+
+Get All Rescue Requests
+Method: GET
+
+Endpoint: /api/rescues
+
+Description: Retrieves a list of all rescue requests.
+
+Get a Single Rescue Request
+Method: GET
+
+Endpoint: /api/rescues/:id
+
+Description: Fetches a single rescue request by its ID.
+
+Update a Rescue Request
+Method: PUT
+
+Endpoint: /api/rescues/:id
+
+Description: Updates the rescue request identified by the given ID.
+
+Example Request Body
+json
+Copy
+Edit
+{
+  "status": "Closed",
+  "action": "Resolved"
+}
+Delete a Rescue Request
+Method: DELETE
+
+Endpoint: /api/rescues/:id
+
+Description: Deletes the rescue request by ID.
+
+Sample Response
+json
+Copy
+Edit
+{
+  "message": "Rescue deleted successfully"
+}

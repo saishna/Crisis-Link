@@ -24,6 +24,10 @@ const FloodZoneSchema = new mongoose.Schema({
         type: Boolean, // Checkbox field
         default: false, // Defaults to unresolved (false)
     },
+    description: {
+        type: String, // A brief description of the flood zone
+        required: false, // This field is optional
+    },
     createdAt: {
         type: Date,
         default: Date.now, // Automatically set the date of creation

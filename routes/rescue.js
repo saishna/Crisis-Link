@@ -1,89 +1,63 @@
 const express = require('express');
 const router = express.Router();
-const Rescue = require('../models/Rescue'); // adjust path as needed
+const Rescue = require('../models/Rescue'); // Adjust the path as needed
 
-
-
-
-
-// Create a rescue
+// CREATE - Add a new rescue request
 router.post('/', async (req, res) => {
     try {
-        const rescue = new Rescue(req.body);
-        console.log(rescue);
-        await rescue.save();
-        res.status(201).json(rescue);
+        const newRescue = new Rescue(req.body);
+        const savedRescue = await newRescue.save();
+        res.status(201).json(savedRescue);
     } catch (err) {
-        res.status(400).json({ error: err.message, details: err.errors });
-
-
+        res.status(400).json({ error: err.message });
     }
 });
 
-// Get all rescues
+// READ - Get all rescue requests
 router.get('/', async (req, res) => {
     try {
         const rescues = await Rescue.find();
-        res.json(rescues);
+        res.status(200).json(rescues);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// Get a single rescue by ID
+// READ - Get a single rescue request by ID
 router.get('/:id', async (req, res) => {
     try {
         const rescue = await Rescue.findById(req.params.id);
         if (!rescue) return res.status(404).json({ error: 'Rescue not found' });
-        res.json(rescue);
+        res.status(200).json(rescue);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// Update a rescue
+// UPDATE - Update a rescue request by ID
 router.put('/:id', async (req, res) => {
     try {
-        const rescue = await Rescue.findByIdAndUpdate(req.params.id, req.body, {
-            new: true
-        });
-        if (!rescue) return res.status(404).json({ error: 'Rescue not found' });
-        res.json(rescue);
+        const updatedRescue = await Rescue.findByIdAndUpdate(
+            req.params.id,
+            req.body,
+            { new: true, runValidators: true }
+        );
+        if (!updatedRescue) return res.status(404).json({ error: 'Rescue not found' });
+        res.status(200).json(updatedRescue);
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
 });
 
-// Delete a rescue
+// DELETE - Delete a rescue request by ID
 router.delete('/:id', async (req, res) => {
     try {
-        const rescue = await Rescue.findByIdAndDelete(req.params.id);
-        if (!rescue) return res.status(404).json({ error: 'Rescue not found' });
-        res.json({ message: 'Rescue deleted' });
+        const deletedRescue = await Rescue.findByIdAndDelete(req.params.id);
+        if (!deletedRescue) return res.status(404).json({ error: 'Rescue not found' });
+        res.status(200).json({ message: 'Rescue deleted successfully' });
     } catch (err) {
         res.status(500).json({ error: err.message });
-    }
-});
-
-// Update action status (resolved/unresolved)
-router.patch('/:id/action', async (req, res) => {
-    try {
-        const { action } = req.body;
-        if (!['Resolved', 'Unresolved'].includes(action)) {
-            return res.status(400).json({ error: 'Invalid action value' });
-        }
-        const rescue = await Rescue.findByIdAndUpdate(
-            req.params.id,
-            { action },
-            { new: true }
-        );
-        if (!rescue) return res.status(404).json({ error: 'Rescue not found' });
-        res.json(rescue);
-    } catch (err) {
-        res.status(400).json({ error: err.message });
     }
 });
 
 module.exports = router;
-
-
