@@ -33,6 +33,8 @@ app.use('/api/emergencies', emergencyRoutes); // Register emergency routes
 app.use('/api/rescues', rescueRoutes); // Register rescue routes
 app.use('/api/test', test);
 app.use('/api/requests', requestApprovalRoutes);
+app.use('/api/helpline', helpline);
+
 
 
 // MongoDB connection
