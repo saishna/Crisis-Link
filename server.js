@@ -9,6 +9,7 @@ const emergencyRoutes = require('./routes/emergencyRoutes');
 const helpline = require('./routes/helpline');
 const rescueRoutes = require('./routes/rescue'); // Import rescue routes
 const test = require('./routes/res');
+const requestApprovalRoutes = require('./routes/requestApproval');
 
 dotenv.config(); // Load environment variables
 
@@ -31,6 +32,8 @@ app.use('/api/helplines', helplineRouter); // Register helpline routes
 app.use('/api/emergencies', emergencyRoutes); // Register emergency routes
 app.use('/api/rescues', rescueRoutes); // Register rescue routes
 app.use('/api/test', test);
+app.use('/api/requests', requestApprovalRoutes);
+
 
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {

@@ -234,3 +234,39 @@ Edit
 {
   "message": "Rescue deleted successfully"
 }
+
+
+# Request Approval API 📚
+
+This API provides endpoints to create, retrieve, update, delete, approve, and reject requests.
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|:------:|:--------:|:----------- |
+| **POST** | `/api/requests/` | Create a new request |
+| **GET** | `/api/requests/` | Get all requests |
+| **GET** | `/api/requests/:id` | Get a specific request by ID |
+| **PUT** | `/api/requests/:id` | Update a request by ID |
+| **DELETE** | `/api/requests/:id` | Delete a request by ID |
+| **PATCH** | `/api/requests/approve/:id` | Approve a request |
+| **PATCH** | `/api/requests/reject/:id` | Reject a request |
+
+---
+
+## Request Body Example (Create)
+
+When creating a new request, send the following JSON structure:
+
+```json
+{
+  "name": "Flood Zone Area A",
+  "location": {
+    "coordinates": [34.0522, -118.2437],
+    "address": "123 Main St, Los Angeles, CA"
+  },
+  "riskLevel": "High",
+  "description": "Evidence of frequent flooding in the area.",
+  "proof": "https://example.com/proof-image.jpg",
+  "initiator": "604c1f7f5311230015e6b8b1"
+}
