@@ -28,7 +28,7 @@ export default function WelcomeScreen() {
                     source={background} />
                 <Animated.Image entering={FlipInEasyX.delay(200).duration(200)}
                     style={tw`h-65 w-3/4 absolute ml-9 `}
-                    source={require("E:/final techlead/New folder/Crisis-Link/assets/crisislink.png")} />
+                    source={require("E:/final techlead/New folder/Crisis-Link/assets/logo.png")} />
                 <Animated.Text entering={BounceIn.delay(300).duration(100).springify().damping(5)}
                     style={tw`ml-15 pt-85 text-white text-5xl font-bold `}>WELCOME!</Animated.Text>
 

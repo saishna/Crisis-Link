@@ -13,8 +13,8 @@ const MapScreen = () => {
     const [floodZones, setFloodZones] = useState([]);
     const [notificationInterval, setNotificationInterval] = useState(null);
     const [highRiskAlert, setHighRiskAlert] = useState(false);
-    const [divertedRoute, setDivertedRoute] = useState([]); // New state to track diverted route
-    const [overlayVisible, setOverlayVisible] = useState(false); // State for overlay visibility
+    const [divertedRoutes, setDivertedRoutes] = useState([]); // Supports multiple routes
+    const [overlayVisible, setOverlayVisible] = useState(false);
 
     useEffect(() => {
         const setupPermissions = async () => {
@@ -57,12 +57,11 @@ const MapScreen = () => {
         fetchFloodZones();
         const interval = setInterval(() => {
             fetchFloodZones();
-        }, 30000); // fetch every 30 seconds
+        }, 30000);
 
         return () => clearInterval(interval);
     }, []);
 
-    // 🔁 Check zone if location or zones change
     useEffect(() => {
         if (location && floodZones.length) {
             checkFloodZone(location);
@@ -111,40 +110,50 @@ const MapScreen = () => {
         });
 
         if (closestZone) {
-            // Trigger route diversion when near a flood zone
-            const newRoute = calculateDivertedRoute(userCoords, closestZone);
-            setDivertedRoute(newRoute);
+            const newRoutes = calculateMultipleRoutes(userCoords, closestZone);
+            setDivertedRoutes(newRoutes);
 
             if (!notificationInterval) {
                 const interval = setInterval(() => {
                     sendRiskLevelNotification(closestZone.riskLevel);
-                }, 10000); // every 10 sec
+                }, 10000);
                 setNotificationInterval(interval);
             }
 
-            // Show the overlay for 5 seconds after entering the high-risk zone
             setOverlayVisible(true);
             setTimeout(() => {
-                setOverlayVisible(false); // Hide the overlay after 5 seconds
+                setOverlayVisible(false);
             }, 5000);
         } else if (notificationInterval) {
             clearInterval(notificationInterval);
             setNotificationInterval(null);
             setHighRiskAlert(false);
-            setDivertedRoute([]); // Clear diverted route when not in a flood zone
+            setDivertedRoutes([]);
             Vibration.cancel();
         }
     };
 
-    // Simulate diversion route
-    const calculateDivertedRoute = (userCoords, floodZone) => {
-        // For the sake of the simulation, generate a simple diverted route
-        const diversionPath = [
-            { latitude: userCoords.latitude, longitude: userCoords.longitude },
-            { latitude: userCoords.latitude + 0.005, longitude: userCoords.longitude + 0.005 },
-            { latitude: userCoords.latitude + 0.01, longitude: userCoords.longitude + 0.01 },
+    const calculateMultipleRoutes = (userCoords, floodZone) => {
+        const baseLat = userCoords.latitude;
+        const baseLng = userCoords.longitude;
+
+        return [
+            [ // Route A - East
+                { latitude: baseLat, longitude: baseLng },
+                { latitude: baseLat + 0.004, longitude: baseLng + 0.005 },
+                { latitude: baseLat + 0.008, longitude: baseLng + 0.008 },
+            ],
+            [ // Route B - North
+                { latitude: baseLat, longitude: baseLng },
+                { latitude: baseLat + 0.006, longitude: baseLng - 0.002 },
+                { latitude: baseLat + 0.012, longitude: baseLng - 0.003 },
+            ],
+            [ // Route C - South-West
+                { latitude: baseLat, longitude: baseLng },
+                { latitude: baseLat - 0.004, longitude: baseLng - 0.004 },
+                { latitude: baseLat - 0.008, longitude: baseLng - 0.006 },
+            ],
         ];
-        return diversionPath;
     };
 
     const sendRiskLevelNotification = async (riskLevel) => {
@@ -156,7 +165,7 @@ const MapScreen = () => {
         if (riskLevel === "High") {
             title = "🚨 High Risk Flood Alert!";
             body = "⚠️ You are in a high-risk flood area. Take action immediately!";
-            Vibration.vibrate([1000, 500, 1000], true); // continuous
+            Vibration.vibrate([1000, 500, 1000], true);
             setHighRiskAlert(true);
         } else {
             Vibration.cancel();
@@ -227,23 +236,32 @@ const MapScreen = () => {
                     pinColor="blue"
                 />
 
-                {/* Display the diverted route */}
-                {divertedRoute.length > 0 && (
+                {divertedRoutes.map((route, idx) => (
                     <Polyline
-                        coordinates={divertedRoute}
-                        strokeColor="green"
-                        strokeWidth={6}
+                        key={idx}
+                        coordinates={route}
+                        strokeColor={['green', 'blue', 'purple'][idx % 3]}
+                        strokeWidth={5}
+                        lineDashPattern={idx === 0 ? undefined : [10, 5]}
                     />
-                )}
+                ))}
             </MapView>
 
-            {/* Show the high-risk alert overlay for 5 seconds */}
             {overlayVisible && (
                 <View style={tw`absolute inset-0 bg-red-900 bg-opacity-90 z-50 justify-center items-center`}>
                     <Text style={tw`text-white text-2xl font-bold mb-2`}>🚨 HIGH RISK FLOOD ALERT 🚨</Text>
                     <Text style={tw`text-white text-center text-lg px-6`}>
                         You are in a high-risk flood zone. Please evacuate or take immediate safety measures.
                     </Text>
+                </View>
+            )}
+
+            {divertedRoutes.length > 0 && (
+                <View style={tw`absolute bottom-4 left-4 bg-white px-3 py-2 rounded-xl shadow`}>
+                    <Text style={tw`text-black font-bold`}>Evacuation Routes:</Text>
+                    <Text style={tw`text-green-700`}>● Route A (Recommended)</Text>
+                    <Text style={tw`text-blue-700`}>● Route B</Text>
+                    <Text style={tw`text-purple-700`}>● Route C</Text>
                 </View>
             )}
         </View>
