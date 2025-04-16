@@ -6,6 +6,7 @@ const Helpline = require('../models/Helpline'); // Ensure the model path is corr
 router.post('/', async (req, res) => {
     try {
         const helpline = new Helpline(req.body); // Create a new document
+        
         await helpline.save(); // Save to the database
         res.status(201).json(helpline); // Respond with the saved document
     } catch (err) {
