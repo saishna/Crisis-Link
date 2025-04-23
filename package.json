@@ -11,11 +11,13 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^1.7.7",
+    "bcryptjs": "^3.0.2",
     "body-parser": "^1.20.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.2",
-    "mongoose": "^8.8.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.13.2",
     "node-fetch": "^3.3.2"
   },
   "devDependencies": {
