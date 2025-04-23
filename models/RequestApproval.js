@@ -10,6 +10,7 @@ const RequestApprovalSchema = new mongoose.Schema({
         coordinates: {
             type: [Number], // [latitude, longitude]
             required: true,
+        
         },
         address: {
             type: String,
