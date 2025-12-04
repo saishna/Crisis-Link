@@ -270,3 +270,184 @@ When creating a new request, send the following JSON structure:
   "proof": "https://example.com/proof-image.jpg",
   "initiator": "604c1f7f5311230015e6b8b1"
 }
+
+
+
+
+
+###login 
+
+
+Postman Testing for auth.js
+Register User
+
+Endpoint: POST http://localhost:5000/api/auth/register
+
+Headers: Content-Type: application/json
+
+Request Body:
+
+{
+  "name": "Saishna",
+  "email": "saishna@example.com",
+  "password": "password123",
+  "role": "user"
+}
+
+
+Response:
+
+{
+  "token": "<JWT_TOKEN>",
+  "user": {
+    "id": "<USER_ID>",
+    "name": "Saishna",
+    "email": "saishna@example.com",
+    "role": "user"
+  }
+}
+
+
+Notes:
+
+Checks if the user already exists.
+
+Hashes the password using bcrypt.
+
+Returns JWT token and user info.
+
+Login User
+
+Endpoint: POST http://localhost:5000/api/auth/login
+
+Headers: Content-Type: application/json
+
+Request Body:
+
+{
+  "email": "saishna@example.com",
+  "password": "password123"
+}
+
+
+Response:
+
+{
+  "token": "<JWT_TOKEN>",
+  "user": {
+    "id": "<USER_ID>",
+    "name": "Saishna",
+    "email": "saishna@example.com",
+    "role": "user"
+  }
+}
+
+
+Notes:
+
+Validates user credentials.
+
+Returns JWT if credentials are correct.
+
+Forgot Password
+
+Endpoint: POST http://localhost:5000/api/auth/forgot-password
+
+Headers: Content-Type: application/json
+
+Request Body:
+
+{
+  "email": "saishna@example.com"
+}
+
+
+Response (for testing):
+
+{
+  "msg": "Reset token generated",
+  "resetToken": "<RESET_TOKEN>"
+}
+
+
+Notes:
+
+Generates a random token valid for 15 minutes.
+
+Saves the token in the database.
+
+In production, this token would be emailed to the user.
+
+Reset Password
+
+Endpoint: POST http://localhost:5000/api/auth/reset-password
+
+Headers: Content-Type: application/json
+
+Request Body:
+
+{
+  "token": "<PASTE_RESET_TOKEN_HERE>",
+  "newPassword": "newpassword123"
+}
+
+
+Response:
+
+{
+  "msg": "Password successfully reset"
+}
+
+
+Notes:
+
+Finds user by reset token and checks expiry.
+
+Hashes the new password.
+
+Clears the reset token and expiry from user record.
+
+Testing Tips with Postman
+
+Start the server: node server.js.
+
+Test endpoints in the following order:
+
+Register User
+
+Login User
+
+Forgot Password → copy resetToken
+
+Reset Password → use copied token
+
+Optional: Automate token using environment variables:
+
+Create environment variable: resetToken.
+
+In Forgot Password → Tests tab:
+
+pm.environment.set("resetToken", pm.response.json().resetToken);
+
+
+In Reset Password body:
+
+{
+  "token": "{{resetToken}}",
+  "newPassword": "newpassword123"
+}
+
+
+✅ No need to copy-paste token manually.
+
+Notes
+
+Use .env for secrets (MONGO_URI, JWT_SECRET).
+
+JWT token expires in 1 day.
+
+Optional: use express.json() instead of body-parser.
+
+
+
+
