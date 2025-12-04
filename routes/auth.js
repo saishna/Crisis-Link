@@ -8,7 +8,7 @@ const User = require('../models/User');
 
 // REGISTER
 router.post('/register', async (req, res) => {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, location } = req.body;
 
     try {
         let user = await User.findOne({ email });
@@ -16,18 +16,42 @@ router.post('/register', async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        user = new User({
+        // Create user object
+        const userData = {
             name,
             email,
             password: hashedPassword,
             role: role === 'rescuer' ? 'rescuer' : 'user'
-        });
+        };
 
+        // Only rescuers will have location
+        if (role === 'rescuer' && location && location.lat && location.lng) {
+            userData.location = {
+                type: "Point",
+                coordinates: [location.lng, location.lat] // IMPORTANT: [lng, lat]
+            };
+        }
+
+        user = new User(userData);
         await user.save();
 
-        const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1d' });
+        const token = jwt.sign(
+            { id: user._id, role: user.role },
+            process.env.JWT_SECRET,
+            { expiresIn: '1d' }
+        );
 
-        res.json({ token, user: { id: user._id, name: user.name, email: user.email, role: user.role } });
+        res.json({
+            token,
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                location: user.location || null
+            }
+        });
+
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

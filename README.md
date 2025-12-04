@@ -279,14 +279,15 @@ When creating a new request, send the following JSON structure:
 
 
 Postman Testing for auth.js
-Register User
+📝 POSTMAN TEST — Register User
+➡ Endpoint
+POST http://localhost:5000/api/auth/register
 
-Endpoint: POST http://localhost:5000/api/auth/register
+➡ Headers
+Content-Type: application/json
 
-Headers: Content-Type: application/json
-
-Request Body:
-
+1️⃣ Register Normal User
+Request Body
 {
   "name": "Saishna",
   "email": "saishna@example.com",
@@ -294,9 +295,7 @@ Request Body:
   "role": "user"
 }
 
-
-Response:
-
+Expected Response
 {
   "token": "<JWT_TOKEN>",
   "user": {

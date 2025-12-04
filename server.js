@@ -28,6 +28,9 @@ app.use((req, res, next) => {
     next();
 });
 
+
+// ✅ This is crucial for parsing JSON
+app.use(express.json());
 // Routes
 app.use('/api/flood-zones', floodRoutes);
 app.use('/api/helplines', helplineRouter);
