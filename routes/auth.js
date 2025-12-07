@@ -6,17 +6,24 @@ const crypto = require('crypto');
 
 const User = require('../models/User');
 
+// ===============================
 // REGISTER
+// ===============================
 router.post('/register', async (req, res) => {
-    const { name, email, password, role, location } = req.body;
+    const { name, email, password, role, phone, location } = req.body;
 
     try {
+        // Check if email already exists
         let user = await User.findOne({ email });
         if (user) return res.status(400).json({ msg: 'User already exists' });
 
+        // Rescuer must provide a phone number
+        if (role === 'rescuer' && !phone) {
+            return res.status(400).json({ msg: 'Rescuer must provide phone number' });
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Create user object
         const userData = {
             name,
             email,
@@ -24,11 +31,16 @@ router.post('/register', async (req, res) => {
             role: role === 'rescuer' ? 'rescuer' : 'user'
         };
 
-        // Only rescuers will have location
-        if (role === 'rescuer' && location && location.lat && location.lng) {
+        // Add phone only for rescuer
+        if (role === 'rescuer') {
+            userData.phone = phone;
+        }
+
+        // Add location if provided (works for both user & rescuer)
+        if (location && location.lat && location.lng) {
             userData.location = {
                 type: "Point",
-                coordinates: [location.lng, location.lat] // IMPORTANT: [lng, lat]
+                coordinates: [location.lng, location.lat] // GeoJSON format
             };
         }
 
@@ -48,6 +60,7 @@ router.post('/register', async (req, res) => {
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                phone: user.phone || null,
                 location: user.location || null
             }
         });
@@ -57,7 +70,9 @@ router.post('/register', async (req, res) => {
     }
 });
 
+// ===============================
 // LOGIN
+// ===============================
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
@@ -68,15 +83,32 @@ router.post('/login', async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ msg: 'Invalid credentials' });
 
-        const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1d' });
+        const token = jwt.sign(
+            { id: user._id, role: user.role }, 
+            process.env.JWT_SECRET, 
+            { expiresIn: '1d' }
+        );
 
-        res.json({ token, user: { id: user._id, name: user.name, email: user.email, role: user.role } });
+        res.json({
+            token,
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                phone: user.phone || null,
+                location: user.location || null
+            }
+        });
+
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
+// ===============================
 // FORGOT PASSWORD
+// ===============================
 router.post('/forgot-password', async (req, res) => {
     const { email } = req.body;
     try {
@@ -92,12 +124,15 @@ router.post('/forgot-password', async (req, res) => {
 
         // For testing: return token
         res.json({ msg: 'Reset token generated', resetToken });
+
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
+// ===============================
 // RESET PASSWORD
+// ===============================
 router.post('/reset-password', async (req, res) => {
     const { token, newPassword } = req.body;
 
@@ -117,6 +152,7 @@ router.post('/reset-password', async (req, res) => {
         await user.save();
 
         res.json({ msg: 'Password successfully reset' });
+
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

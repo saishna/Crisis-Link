@@ -289,11 +289,28 @@ Content-Type: application/json
 1️⃣ Register Normal User
 Request Body
 {
-  "name": "Saishna",
-  "email": "saishna@example.com",
+  "name": "John Doe",
+  "email": "johndoe@example.com",
   "password": "password123",
   "role": "user"
 }
+
+
+{
+    "name": "Rescue Team 1",
+    "email": "rescuesdsadsr1@example.com",
+    "password": "StrongRescue@123",
+    "role": "rescuer",
+    "phone": "+9779800000000",
+    "location": {
+        "lat": 27.6939,
+        "lng": 85.3215
+    }
+}
+
+
+
+
 
 Expected Response
 {
@@ -450,3 +467,18 @@ Optional: use express.json() instead of body-parser.
 
 
 
+
+
+
+
+Find nearby recurers:
+
+
+http://localhost:5000/api/rescues/nearby
+
+
+{
+  "lat": 27.6937,
+  "lng": 85.3140,
+  "maxDistance": 3000
+}
