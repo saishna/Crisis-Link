@@ -275,195 +275,168 @@ When creating a new request, send the following JSON structure:
 
 
 
-###login 
+#CrisisLink Auth API (Port 5000): Postman Testing Guide
+1️⃣ Register User (Phone Mandatory, Email Optional)
 
+Endpoint:
 
-Postman Testing for auth.js
-📝 POSTMAN TEST — Register User
-➡ Endpoint
 POST http://localhost:5000/api/auth/register
 
-➡ Headers
-Content-Type: application/json
 
-1️⃣ Register Normal User
-Request Body
+Request Body Example (User with email):
+
 {
   "name": "John Doe",
-  "email": "johndoe@example.com",
-  "password": "password123",
+  "phone": "+9779811111111",
+  "email": "john@example.com",
+  "password": "Test@123",
   "role": "user"
 }
 
 
+Request Body Example (User without email):
+
 {
-    "name": "Rescue Team 1",
-    "email": "rescuesdsadsr1@example.com",
-    "password": "StrongRescue@123",
-    "role": "rescuer",
-    "phone": "+9779800000000",
-    "location": {
-        "lat": 27.6939,
-        "lng": 85.3215
-    }
+  "name": "Jane Smith",
+  "phone": "+9779811122222",
+  "password": "Test@123",
+  "role": "user"
 }
 
 
+Response Example:
 
-
-
-Expected Response
 {
-  "token": "<JWT_TOKEN>",
+  "msg": "Registration successful. OTP sent to phone and email.",
+  "otp": "123456"  // For testing only
+}
+
+2️⃣ Register Rescuer (Phone + Location Mandatory)
+
+Endpoint:
+
+POST http://localhost:5000/api/auth/register
+
+
+Request Body Example:
+
+{
+  "name": "Rescuer One",
+  "phone": "+9779822222222",
+  "email": "rescuer@example.com",
+  "password": "Rescue@123",
+  "role": "rescuer",
+  "location": { "lat": 27.7172, "lng": 85.3240 }
+}
+
+
+Important: Location is mandatory for Rescuer.
+If missing:
+
+{
+  "msg": "Location is required for rescuer"
+}
+
+
+Response Example:
+
+{
+  "msg": "Registration successful. OTP sent to phone and email.",
+  "otp": "789012"
+}
+
+3️⃣ Verify OTP
+
+Endpoint:
+
+POST http://localhost:5000/api/auth/verify-otp
+
+
+Request Body Example:
+
+{
+  "phone": "+9779811111111",
+  "otp": "123456"
+}
+
+
+Response Example:
+
+{
+  "msg": "OTP verified successfully"
+}
+
+4️⃣ Login
+
+Endpoint:
+
+POST http://localhost:5000/api/auth/login
+
+
+Request Body Example:
+
+{
+  "phone": "+9779811111111",
+  "password": "Test@123"
+}
+
+
+Response Example:
+
+{
+  "token": "JWT_TOKEN_HERE",
   "user": {
-    "id": "<USER_ID>",
-    "name": "Saishna",
-    "email": "saishna@example.com",
-    "role": "user"
+    "id": "user_id_here",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "phone": "+9779811111111",
+    "role": "user",
+    "location": null
   }
 }
 
+5️⃣ Forgot Password (Send OTP)
 
-Notes:
+Endpoint:
 
-Checks if the user already exists.
+POST http://localhost:5000/api/auth/forgot-password
 
-Hashes the password using bcrypt.
 
-Returns JWT token and user info.
-
-Login User
-
-Endpoint: POST http://localhost:5000/api/auth/login
-
-Headers: Content-Type: application/json
-
-Request Body:
+Request Body Example:
 
 {
-  "email": "saishna@example.com",
-  "password": "password123"
+  "phone": "+9779811111111"
 }
 
 
-Response:
+Response Example:
 
 {
-  "token": "<JWT_TOKEN>",
-  "user": {
-    "id": "<USER_ID>",
-    "name": "Saishna",
-    "email": "saishna@example.com",
-    "role": "user"
-  }
+  "msg": "Password reset OTP sent to phone and email (if available)",
+  "otp": "654321"
+}
+
+6️⃣ Reset Password
+
+Endpoint:
+
+POST http://localhost:5000/api/auth/reset-password
+
+
+Request Body Example:
+
+{
+  "phone": "+9779811111111",
+  "otp": "654321",
+  "newPassword": "NewPass@123"
 }
 
 
-Notes:
-
-Validates user credentials.
-
-Returns JWT if credentials are correct.
-
-Forgot Password
-
-Endpoint: POST http://localhost:5000/api/auth/forgot-password
-
-Headers: Content-Type: application/json
-
-Request Body:
+Response Example:
 
 {
-  "email": "saishna@example.com"
+  "msg": "Password reset successful"
 }
-
-
-Response (for testing):
-
-{
-  "msg": "Reset token generated",
-  "resetToken": "<RESET_TOKEN>"
-}
-
-
-Notes:
-
-Generates a random token valid for 15 minutes.
-
-Saves the token in the database.
-
-In production, this token would be emailed to the user.
-
-Reset Password
-
-Endpoint: POST http://localhost:5000/api/auth/reset-password
-
-Headers: Content-Type: application/json
-
-Request Body:
-
-{
-  "token": "<PASTE_RESET_TOKEN_HERE>",
-  "newPassword": "newpassword123"
-}
-
-
-Response:
-
-{
-  "msg": "Password successfully reset"
-}
-
-
-Notes:
-
-Finds user by reset token and checks expiry.
-
-Hashes the new password.
-
-Clears the reset token and expiry from user record.
-
-Testing Tips with Postman
-
-Start the server: node server.js.
-
-Test endpoints in the following order:
-
-Register User
-
-Login User
-
-Forgot Password → copy resetToken
-
-Reset Password → use copied token
-
-Optional: Automate token using environment variables:
-
-Create environment variable: resetToken.
-
-In Forgot Password → Tests tab:
-
-pm.environment.set("resetToken", pm.response.json().resetToken);
-
-
-In Reset Password body:
-
-{
-  "token": "{{resetToken}}",
-  "newPassword": "newpassword123"
-}
-
-
-✅ No need to copy-paste token manually.
-
-Notes
-
-Use .env for secrets (MONGO_URI, JWT_SECRET).
-
-JWT token expires in 1 day.
-
-Optional: use express.json() instead of body-parser.
-
 
 
 
