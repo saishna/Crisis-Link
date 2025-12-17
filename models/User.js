@@ -30,20 +30,18 @@ const UserSchema = new mongoose.Schema({
     }
   },
 
-  // Location is optional for normal users
-  // Required only for rescuers
   location: {
     type: {
       type: String,
       enum: ['Point'],
       required: function () {
-        return this.role === 'rescuer';  // Only rescuer needs location.type
+        return this.role === 'rescuer';
       }
     },
     coordinates: {
       type: [Number], // [lng, lat]
       required: function () {
-        return this.role === 'rescuer';  // Only rescuer needs coordinates
+        return this.role === 'rescuer';
       },
       validate: {
         validator: function (value) {
@@ -58,7 +56,19 @@ const UserSchema = new mongoose.Schema({
   },
 
   resetPasswordToken: String,
-  resetPasswordExpires: Date
+  resetPasswordExpires: Date,
+
+  // Email verification
+  isEmailVerified: {
+    type: Boolean,
+    default: false
+  },
+  emailVerificationToken: String,
+  emailVerificationExpires: Date,
+
+  // Email OTP
+  emailOTP: String,
+  emailOTPExpires: Date
 });
 
 // Only apply geospatial index if location exists
