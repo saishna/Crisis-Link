@@ -51,13 +51,15 @@ app.use('/api/rescues', nearbyRescuerRoutes);
 
 app.use('/api/auth', authRoutes); // ✅ Auth route added
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
+// MongoDB connection
+const User = require('./models/User');
+mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+.then(async () => {
+    console.log('✅ Connected to MongoDB');
+    await User.syncIndexes(); // ✅ Fix duplicate email index
+    console.log('✅ User indexes synced');
 })
-    .then(() => console.log('✅ Connected to MongoDB'))
-    .catch((err) => console.error('❌ Failed to connect to MongoDB:', err));
+.catch(err => console.error('❌ Failed to connect to MongoDB:', err));
 
 // Fallback for unknown routes
 app.use((req, res, next) => {
