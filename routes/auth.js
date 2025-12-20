@@ -2,51 +2,46 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
 const axios = require('axios');
 const sendEmail = require('../utils/sendEmail');
 const User = require('../models/User');
 
-// Helper: OTP generator
+// ===============================
+// HELPERS
+// ===============================
 const generateOTP = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
 
-// Helper: Send SMS via Sparrow API
+// Send SMS (Sparrow)
 const sendSMS = async (phone, message) => {
   try {
-    const response = await axios.post(
-      'https://api.sparrowsms.com/v2/sms/',
-      {
-        token: process.env.SPARROW_API_TOKEN,
-        from: 'CRISISLINK', // Your sender ID
-        to: phone,
-        text: message
-      }
-    );
-    return response.data;
+    await axios.post('https://api.sparrowsms.com/v2/sms/', {
+      token: process.env.SPARROW_API_TOKEN,
+      from: 'CRISISLINK',
+      to: phone,
+      text: message
+    });
   } catch (err) {
-    console.error('SMS sending failed:', err.message);
+    console.error('SMS failed:', err.message);
   }
 };
 
 // ===============================
-// REGISTER
+// CREATE USER (REGISTER)
 // ===============================
 router.post('/register', async (req, res) => {
   const { name, email, phone, password, role, location } = req.body;
 
   try {
-    if (!phone) return res.status(400).json({ msg: 'Phone number is required' });
-
-    if (role === 'rescuer') {
-      if (!location?.lat || !location?.lng)
-        return res.status(400).json({ msg: 'Location is required for rescuer' });
-    }
+    if (!phone) return res.status(400).json({ msg: 'Phone required' });
 
     const existingUser = await User.findOne({
       $or: [{ phone }, email ? { email } : null].filter(Boolean)
     });
-    if (existingUser) return res.status(400).json({ msg: 'User already exists' });
+
+    if (existingUser) {
+      return res.status(400).json({ msg: 'User already exists' });
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const otp = generateOTP();
@@ -57,25 +52,28 @@ router.post('/register', async (req, res) => {
       password: hashedPassword,
       role,
       otp,
-      otpExpires: Date.now() + 10 * 60 * 1000, // 10 mins
+      otpExpires: Date.now() + 10 * 60 * 1000,
       isVerified: false
     };
 
     if (email) userData.email = email;
-    if (role === 'rescuer') userData.location = { type: 'Point', coordinates: [location.lng, location.lat] };
+
+    if (role === 'rescuer' && location?.lat && location?.lng) {
+      userData.location = {
+        type: 'Point',
+        coordinates: [location.lng, location.lat]
+      };
+    }
 
     const user = new User(userData);
     await user.save();
 
-    // Send OTP via SMS
     await sendSMS(phone, `Your OTP is ${otp}`);
-
-    // Send OTP via Email if provided
     if (email) {
-      await sendEmail(email, 'Verification OTP', `<h3>Your OTP is ${otp}</h3><p>Valid for 10 minutes</p>`);
+      await sendEmail(email, 'Verification OTP', `<h3>OTP: ${otp}</h3>`);
     }
 
-    res.json({ msg: 'Registration successful. OTP sent to phone and email (if provided).' });
+    res.json({ msg: 'User registered. OTP sent.' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -94,14 +92,14 @@ router.post('/verify-otp', async (req, res) => {
       otpExpires: { $gt: Date.now() }
     });
 
-    if (!user) return res.status(400).json({ msg: 'Invalid or expired OTP' });
+    if (!user) return res.status(400).json({ msg: 'Invalid OTP' });
 
     user.isVerified = true;
     user.otp = undefined;
     user.otpExpires = undefined;
     await user.save();
 
-    res.json({ msg: 'OTP verified successfully' });
+    res.json({ msg: 'OTP verified' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -117,13 +115,18 @@ router.post('/login', async (req, res) => {
     const user = await User.findOne({
       $or: [{ phone }, email ? { email } : null].filter(Boolean)
     });
-    if (!user) return res.status(400).json({ msg: 'User does not exist' });
-    if (!user.isVerified) return res.status(403).json({ msg: 'Please verify OTP first' });
+
+    if (!user) return res.status(400).json({ msg: 'User not found' });
+    if (!user.isVerified) return res.status(403).json({ msg: 'OTP not verified' });
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ msg: 'Invalid credentials' });
 
-    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    const token = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
+    );
 
     res.json({
       token,
@@ -142,7 +145,78 @@ router.post('/login', async (req, res) => {
 });
 
 // ===============================
-// FORGOT PASSWORD (Send OTP)
+// READ ALL USERS
+// ===============================
+router.get('/users', async (req, res) => {
+  try {
+    const users = await User.find()
+      .select('-password -otp -otpExpires');
+
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===============================
+// READ SINGLE USER
+// ===============================
+router.get('/users/:id', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id)
+      .select('-password -otp -otpExpires');
+
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===============================
+// UPDATE USER
+// ===============================
+router.put('/users/:id', async (req, res) => {
+  try {
+    const updates = req.body;
+
+    // Prevent sensitive updates
+    delete updates.password;
+    delete updates.otp;
+    delete updates.otpExpires;
+
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      updates,
+      { new: true }
+    ).select('-password -otp -otpExpires');
+
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    res.json({ msg: 'User updated', user });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===============================
+// DELETE USER
+// ===============================
+router.delete('/users/:id', async (req, res) => {
+  try {
+    const user = await User.findByIdAndDelete(req.params.id);
+
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    res.json({ msg: 'User deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===============================
+// FORGOT PASSWORD
 // ===============================
 router.post('/forgot-password', async (req, res) => {
   const { email, phone } = req.body;
@@ -151,19 +225,20 @@ router.post('/forgot-password', async (req, res) => {
     const user = await User.findOne({
       $or: [{ phone }, email ? { email } : null].filter(Boolean)
     });
-    if (!user) return res.status(400).json({ msg: 'User does not exist' });
+
+    if (!user) return res.status(400).json({ msg: 'User not found' });
 
     const otp = generateOTP();
     user.otp = otp;
-    user.otpExpires = Date.now() + 10 * 60 * 1000; // 10 mins
+    user.otpExpires = Date.now() + 10 * 60 * 1000;
     await user.save();
 
-    await sendSMS(user.phone, `Your password reset OTP is ${otp}`);
+    await sendSMS(user.phone, `Reset OTP: ${otp}`);
     if (user.email) {
-      await sendEmail(user.email, 'Password Reset OTP', `<h3>Your OTP is ${otp}</h3><p>Valid for 10 minutes</p>`);
+      await sendEmail(user.email, 'Password Reset OTP', `<h3>${otp}</h3>`);
     }
 
-    res.json({ msg: 'Password reset OTP sent to phone and email (if available).' });
+    res.json({ msg: 'Password reset OTP sent' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -181,7 +256,8 @@ router.post('/reset-password', async (req, res) => {
       otp,
       otpExpires: { $gt: Date.now() }
     });
-    if (!user) return res.status(400).json({ msg: 'Invalid or expired OTP' });
+
+    if (!user) return res.status(400).json({ msg: 'Invalid OTP' });
 
     user.password = await bcrypt.hash(newPassword, 10);
     user.otp = undefined;

@@ -6,6 +6,16 @@ const DrainageReportSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  phone: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  area: {
+    type: String,
+    required: true,
+    trim: true
+  },
   latitude: {
     type: Number,
     required: true

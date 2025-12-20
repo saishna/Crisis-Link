@@ -495,11 +495,14 @@ Content-Type: application/json
 Body (raw JSON):
 
 {
-  "name": "Saishna Budhathoki",
-  "latitude": 27.6939,
-  "longitude": 85.3149,
-  "message": "Drainage is blocked after heavy rainfall."
+  "name": "John Doe",
+  "phone": "9801000001",
+  "area": "Teku",
+  "latitude": 27.7172,
+  "longitude": 85.3240,
+  "message": "Drainage blocked near the main road"
 }
+
 
 
 Expected Response (201):

@@ -2,18 +2,19 @@ const express = require("express");
 const router = express.Router();
 const DrainageReport = require("../models/DrainageReport");
 
-
 // ✅ CREATE (POST)
 router.post("/", async (req, res) => {
   try {
-    const { name, latitude, longitude, message } = req.body;
+    const { name, phone, area, latitude, longitude, message } = req.body;
 
-    if (!name || !latitude || !longitude || !message) {
+    if (!name || !phone || !area || !latitude || !longitude || !message) {
       return res.status(400).json({ error: "All fields are required" });
     }
 
     const report = await DrainageReport.create({
       name,
+      phone,
+      area,
       latitude,
       longitude,
       message
@@ -26,7 +27,6 @@ router.post("/", async (req, res) => {
   }
 });
 
-
 // ✅ READ ALL (GET)
 router.get("/", async (req, res) => {
   try {
@@ -36,7 +36,6 @@ router.get("/", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
 
 // ✅ READ ONE (GET by ID)
 router.get("/:id", async (req, res) => {
@@ -53,15 +52,14 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-
 // ✅ UPDATE (PUT)
 router.put("/:id", async (req, res) => {
   try {
-    const { name, latitude, longitude, message } = req.body;
+    const { name, phone, area, latitude, longitude, message } = req.body;
 
     const updated = await DrainageReport.findByIdAndUpdate(
       req.params.id,
-      { name, latitude, longitude, message },
+      { name, phone, area, latitude, longitude, message },
       { new: true, runValidators: true }
     );
 
@@ -74,7 +72,6 @@ router.put("/:id", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
 
 // ✅ DELETE (optional, admin use)
 router.delete("/:id", async (req, res) => {

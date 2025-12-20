@@ -3,12 +3,31 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const axios = require('axios');
 const sendEmail = require('../utils/sendEmail');
 const User = require('../models/User');
 
 // Helper: OTP generator
 const generateOTP = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
+
+// Helper: Send SMS via Sparrow API
+const sendSMS = async (phone, message) => {
+  try {
+    const response = await axios.post(
+      'https://api.sparrowsms.com/v2/sms/',
+      {
+        token: process.env.SPARROW_API_TOKEN,
+        from: 'CRISISLINK', // Your sender ID
+        to: phone,
+        text: message
+      }
+    );
+    return response.data;
+  } catch (err) {
+    console.error('SMS sending failed:', err.message);
+  }
+};
 
 // ===============================
 // REGISTER
@@ -24,11 +43,9 @@ router.post('/register', async (req, res) => {
         return res.status(400).json({ msg: 'Location is required for rescuer' });
     }
 
-    // Check existing user
     const existingUser = await User.findOne({
       $or: [{ phone }, email ? { email } : null].filter(Boolean)
     });
-
     if (existingUser) return res.status(400).json({ msg: 'User already exists' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -40,7 +57,7 @@ router.post('/register', async (req, res) => {
       password: hashedPassword,
       role,
       otp,
-      otpExpires: Date.now() + 10 * 60 * 1000, // 10 minutes
+      otpExpires: Date.now() + 10 * 60 * 1000, // 10 mins
       isVerified: false
     };
 
@@ -50,21 +67,15 @@ router.post('/register', async (req, res) => {
     const user = new User(userData);
     await user.save();
 
-    // Send OTP to phone
-    console.log(`OTP sent to phone ${phone}: ${otp}`);
-    // TODO: integrate real SMS provider
+    // Send OTP via SMS
+    await sendSMS(phone, `Your OTP is ${otp}`);
 
-    // Send OTP to email if provided
+    // Send OTP via Email if provided
     if (email) {
       await sendEmail(email, 'Verification OTP', `<h3>Your OTP is ${otp}</h3><p>Valid for 10 minutes</p>`);
     }
 
-    res.json({
-      msg: email
-        ? 'Registration successful. OTP sent to phone and email.'
-        : 'Registration successful. OTP sent to phone.',
-      otp // for testing only
-    });
+    res.json({ msg: 'Registration successful. OTP sent to phone and email (if provided).' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -106,7 +117,6 @@ router.post('/login', async (req, res) => {
     const user = await User.findOne({
       $or: [{ phone }, email ? { email } : null].filter(Boolean)
     });
-
     if (!user) return res.status(400).json({ msg: 'User does not exist' });
     if (!user.isVerified) return res.status(403).json({ msg: 'Please verify OTP first' });
 
@@ -141,27 +151,19 @@ router.post('/forgot-password', async (req, res) => {
     const user = await User.findOne({
       $or: [{ phone }, email ? { email } : null].filter(Boolean)
     });
-
     if (!user) return res.status(400).json({ msg: 'User does not exist' });
 
     const otp = generateOTP();
     user.otp = otp;
-    user.otpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+    user.otpExpires = Date.now() + 10 * 60 * 1000; // 10 mins
     await user.save();
 
-    // Send OTP to phone
-    console.log(`Forgot-password OTP sent to phone ${user.phone}: ${otp}`);
-    // TODO: integrate real SMS provider
-
-    // Send OTP to email if available
+    await sendSMS(user.phone, `Your password reset OTP is ${otp}`);
     if (user.email) {
       await sendEmail(user.email, 'Password Reset OTP', `<h3>Your OTP is ${otp}</h3><p>Valid for 10 minutes</p>`);
     }
 
-    res.json({
-      msg: 'Password reset OTP sent to phone and email (if available)',
-      otp // for testing only
-    });
+    res.json({ msg: 'Password reset OTP sent to phone and email (if available).' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -179,7 +181,6 @@ router.post('/reset-password', async (req, res) => {
       otp,
       otpExpires: { $gt: Date.now() }
     });
-
     if (!user) return res.status(400).json({ msg: 'Invalid or expired OTP' });
 
     user.password = await bcrypt.hash(newPassword, 10);
