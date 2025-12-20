@@ -14,6 +14,8 @@ const rescueRoutes = require('./routes/rescue');
 const test = require('./routes/res');
 const requestApprovalRoutes = require('./routes/requestApproval');
 const authRoutes = require('./routes/auth'); 
+const nearbyHelplines = require('./routes/near'); 
+
 
 
 
@@ -46,6 +48,7 @@ const drainagerep = require('./routes/drainage');
 app.use('/api/drainage', drainagerep);
 const nearbyRescuerRoutes = require('./routes/nearbyRescuer');
 app.use('/api/rescues', nearbyRescuerRoutes);
+app.use('/api/nearhelpline', nearbyHelplines);
 
 
 

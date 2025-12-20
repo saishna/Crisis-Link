@@ -597,3 +597,43 @@ Expected Response (200):
 {
   "message": "Report deleted"
 }
+
+
+
+
+
+
+
+
+
+// For nearbyhelplineAPI
+
+
+✅ How to test   nearbyhelplines:
+GET Request in Postman
+
+URL:
+
+http://localhost:5000/api/nearhelpline/nearby?latitude=27.7&longitude=85.3&maxDistance=5
+
+POST Request in Postman
+
+URL:
+
+http://localhost:5000/api/nearhelpline/nearby
+
+
+Method: POST
+
+Headers: Content-Type: application/json
+
+Body (raw JSON):
+
+{
+    "latitude": 27.7,
+    "longitude": 85.3,
+    "maxDistance": 5
+}
+
+
+Both routes will return helplines within the specified max distance.
