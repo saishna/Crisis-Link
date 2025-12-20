@@ -13,9 +13,11 @@ const emergencyRoutes = require('./routes/emergencyRoutes');
 const rescueRoutes = require('./routes/rescue');
 const test = require('./routes/res');
 const requestApprovalRoutes = require('./routes/requestApproval');
-const authRoutes = require('./routes/auth'); // ✅ Auth route for login/register
-// const helpreq=require('./routes/helpRequest');
-// const notification=require('./routes/Notification');
+const authRoutes = require('./routes/auth'); 
+
+
+
+
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -40,10 +42,11 @@ app.use('/api/emergencies', emergencyRoutes);
 app.use('/api/rescues', rescueRoutes);
 app.use('/api/test', test);
 app.use('/api/requests', requestApprovalRoutes);
-// app.use('/api/help',helpreq); 
-// app.use('/api/notification',notification);
+const drainagerep = require('./routes/drainage');
+app.use('/api/drainage', drainagerep);
 const nearbyRescuerRoutes = require('./routes/nearbyRescuer');
 app.use('/api/rescues', nearbyRescuerRoutes);
+
 
 
 

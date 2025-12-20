@@ -455,3 +455,145 @@ http://localhost:5000/api/rescues/nearby
   "lng": 85.3140,
   "maxDistance": 3000
 }
+
+
+
+
+
+
+
+
+
+
+Drainage Report API – Postman Testing
+
+Base URL:
+
+http://localhost:5000/api/drainage
+
+1️⃣ Test Route (Check router is working)
+
+Method: GET
+
+URL: /test → http://localhost:5000/api/drainage/test
+
+Expected Response:
+
+Drainage route is working!
+
+2️⃣ Create a Report (POST)
+
+Method: POST
+
+URL: / → http://localhost:5000/api/drainage
+
+Headers:
+
+Content-Type: application/json
+
+
+Body (raw JSON):
+
+{
+  "name": "Saishna Budhathoki",
+  "latitude": 27.6939,
+  "longitude": 85.3149,
+  "message": "Drainage is blocked after heavy rainfall."
+}
+
+
+Expected Response (201):
+
+{
+  "_id": "<generated_id>",
+  "name": "Saishna Budhathoki",
+  "latitude": 27.6939,
+  "longitude": 85.3149,
+  "message": "Drainage is blocked after heavy rainfall.",
+  "createdAt": "<timestamp>",
+  "updatedAt": "<timestamp>",
+  "__v": 0
+}
+
+3️⃣ Get All Reports (GET)
+
+Method: GET
+
+URL: / → http://localhost:5000/api/drainage
+
+Expected Response (200):
+
+[
+  {
+    "_id": "<id>",
+    "name": "Saishna Budhathoki",
+    "latitude": 27.6939,
+    "longitude": 85.3149,
+    "message": "Drainage is blocked after heavy rainfall.",
+    "createdAt": "<timestamp>",
+    "updatedAt": "<timestamp>"
+  }
+]
+
+4️⃣ Get Single Report by ID (GET)
+
+Method: GET
+
+URL: /:id → http://localhost:5000/api/drainage/<reportId>
+
+Expected Response (200):
+
+{
+  "_id": "<reportId>",
+  "name": "Saishna Budhathoki",
+  "latitude": 27.6939,
+  "longitude": 85.3149,
+  "message": "Drainage is blocked after heavy rainfall.",
+  "createdAt": "<timestamp>",
+  "updatedAt": "<timestamp>"
+}
+
+5️⃣ Update a Report (PUT)
+
+Method: PUT
+
+URL: /:id → http://localhost:5000/api/drainage/<reportId>
+
+Headers:
+
+Content-Type: application/json
+
+
+Body (raw JSON):
+
+{
+  "name": "Saishna Budhathoki",
+  "latitude": 27.6941,
+  "longitude": 85.3152,
+  "message": "Drainage fully blocked after rain."
+}
+
+
+Expected Response (200):
+
+{
+  "_id": "<reportId>",
+  "name": "Saishna Budhathoki",
+  "latitude": 27.6941,
+  "longitude": 85.3152,
+  "message": "Drainage fully blocked after rain.",
+  "createdAt": "<original_timestamp>",
+  "updatedAt": "<new_timestamp>"
+}
+
+6️⃣ Delete a Report (DELETE)
+
+Method: DELETE
+
+URL: /:id → http://localhost:5000/api/drainage/<reportId>
+
+Expected Response (200):
+
+{
+  "message": "Report deleted"
+}
