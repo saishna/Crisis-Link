@@ -9,31 +9,66 @@ const User = require('../models/User');
 // ===============================
 // HELPERS
 // ===============================
+
+// Generate OTP
 const generateOTP = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
 
-// Send SMS (Sparrow)
+// Validate Nepal phone number
+const isValidPhone = (phone) => /^98\d{8}$/.test(phone);
+
+// ===============================
+// SEND SMS (FIXED)
+// ===============================
 const sendSMS = async (phone, message) => {
   try {
-    await axios.post('https://api.sparrowsms.com/v2/sms/', {
-      token: process.env.SPARROW_API_TOKEN,
-      from: 'CRISISLINK',
-      to: phone,
-      text: message
-    });
+    console.log("🔑 TOKEN:", process.env.SPARROW_API_TOKEN);
+
+    if (!process.env.SPARROW_API_TOKEN) {
+      throw new Error("Sparrow API token missing");
+    }
+
+    if (!isValidPhone(phone)) {
+      throw new Error("Invalid Nepal phone number");
+    }
+
+    const params = new URLSearchParams();
+    params.append('token', process.env.SPARROW_API_TOKEN.trim()); // ✅ fix
+    params.append('from', 'Demo'); // ✅ IMPORTANT (not Demo)
+    params.append('to', phone);
+    params.append('text', message);
+
+    const response = await axios.post(
+      'https://api.sparrowsms.com/v2/sms/',
+      params,
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      }
+    );
+
+    console.log("✅ SMS RESPONSE:", response.data);
+
+    if (response.data.response_code !== 200) {
+      throw new Error(response.data.response);
+    }
+
   } catch (err) {
-    console.error('SMS failed:', err.message);
+    console.error("❌ SMS FAILED:", err.response?.data || err.message);
   }
 };
 
 // ===============================
-// CREATE USER (REGISTER)
+// REGISTER
 // ===============================
 router.post('/register', async (req, res) => {
   const { name, email, phone, password, role, location } = req.body;
 
   try {
     if (!phone) return res.status(400).json({ msg: 'Phone required' });
+    if (!isValidPhone(phone))
+      return res.status(400).json({ msg: 'Invalid phone number' });
 
     const existingUser = await User.findOne({
       $or: [{ phone }, email ? { email } : null].filter(Boolean)
@@ -68,12 +103,16 @@ router.post('/register', async (req, res) => {
     const user = new User(userData);
     await user.save();
 
+    // ✅ Send OTP via SMS
     await sendSMS(phone, `Your OTP is ${otp}`);
+
+    // ✅ Send Email (optional)
     if (email) {
       await sendEmail(email, 'Verification OTP', `<h3>OTP: ${otp}</h3>`);
     }
 
-    res.json({ msg: 'User registered. OTP sent.' });
+    res.json({ msg: 'User registered. OTP sent to phone.' });
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -92,14 +131,15 @@ router.post('/verify-otp', async (req, res) => {
       otpExpires: { $gt: Date.now() }
     });
 
-    if (!user) return res.status(400).json({ msg: 'Invalid OTP' });
+    if (!user) return res.status(400).json({ msg: 'Invalid or expired OTP' });
 
     user.isVerified = true;
     user.otp = undefined;
     user.otpExpires = undefined;
     await user.save();
 
-    res.json({ msg: 'OTP verified' });
+    res.json({ msg: 'OTP verified successfully' });
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -117,10 +157,12 @@ router.post('/login', async (req, res) => {
     });
 
     if (!user) return res.status(400).json({ msg: 'User not found' });
-    if (!user.isVerified) return res.status(403).json({ msg: 'OTP not verified' });
+    if (!user.isVerified)
+      return res.status(403).json({ msg: 'OTP not verified' });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ msg: 'Invalid credentials' });
+    if (!isMatch)
+      return res.status(400).json({ msg: 'Invalid credentials' });
 
     const token = jwt.sign(
       { id: user._id },
@@ -139,77 +181,7 @@ router.post('/login', async (req, res) => {
         location: user.location || null
       }
     });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
-// ===============================
-// READ ALL USERS
-// ===============================
-router.get('/users', async (req, res) => {
-  try {
-    const users = await User.find()
-      .select('-password -otp -otpExpires');
-
-    res.json(users);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ===============================
-// READ SINGLE USER
-// ===============================
-router.get('/users/:id', async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id)
-      .select('-password -otp -otpExpires');
-
-    if (!user) return res.status(404).json({ msg: 'User not found' });
-
-    res.json(user);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ===============================
-// UPDATE USER
-// ===============================
-router.put('/users/:id', async (req, res) => {
-  try {
-    const updates = req.body;
-
-    // Prevent sensitive updates
-    delete updates.password;
-    delete updates.otp;
-    delete updates.otpExpires;
-
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      updates,
-      { new: true }
-    ).select('-password -otp -otpExpires');
-
-    if (!user) return res.status(404).json({ msg: 'User not found' });
-
-    res.json({ msg: 'User updated', user });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ===============================
-// DELETE USER
-// ===============================
-router.delete('/users/:id', async (req, res) => {
-  try {
-    const user = await User.findByIdAndDelete(req.params.id);
-
-    if (!user) return res.status(404).json({ msg: 'User not found' });
-
-    res.json({ msg: 'User deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -234,11 +206,13 @@ router.post('/forgot-password', async (req, res) => {
     await user.save();
 
     await sendSMS(user.phone, `Reset OTP: ${otp}`);
+
     if (user.email) {
       await sendEmail(user.email, 'Password Reset OTP', `<h3>${otp}</h3>`);
     }
 
     res.json({ msg: 'Password reset OTP sent' });
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -257,7 +231,7 @@ router.post('/reset-password', async (req, res) => {
       otpExpires: { $gt: Date.now() }
     });
 
-    if (!user) return res.status(400).json({ msg: 'Invalid OTP' });
+    if (!user) return res.status(400).json({ msg: 'Invalid or expired OTP' });
 
     user.password = await bcrypt.hash(newPassword, 10);
     user.otp = undefined;
@@ -265,6 +239,7 @@ router.post('/reset-password', async (req, res) => {
     await user.save();
 
     res.json({ msg: 'Password reset successful' });
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
